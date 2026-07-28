@@ -6,8 +6,8 @@
     <title>松建ルーキーズ・サポート</title>
     <style>
         :root {
-            --main-color: #0b2265; /* 松建様のコーポレートネイビー */
-            --accent-red: #e60012; /* ロゴの赤 */
+            --main-color: #0b2265;
+            --accent-red: #e60012;
             --danger-color: #dc3545;
             --success-color: #28a745;
             --bg-color: #f8f9fa;
@@ -34,7 +34,6 @@
 
         .result-box { width: 100%; max-width: 300px; background: white; border: 2px dashed #ccc; border-radius: 12px; padding: 15px; margin-bottom: 15px; min-height: 120px; box-sizing: border-box; font-size: 0.95rem; line-height: 1.5; }
 
-        /* 🚨 各種オーバーレイ画面 */
         .overlay-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: 1000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .screen-header { color: white; padding: 15px; text-align: center; font-size: 1.4rem; font-weight: bold; border-radius: 8px; margin-bottom: 20px; }
         .bg-danger { background-color: var(--danger-color); }
@@ -45,7 +44,6 @@
         .step-title { font-weight: bold; color: var(--danger-color); margin-bottom: 5px; font-size: 1.1rem; }
         .highlight-box { background: #e9ecef; padding: 10px; border-radius: 6px; font-family: monospace; margin-top: 5px; }
         
-        /* 通話ボタン共通スタイル */
         .call-btn { display: block; width: 100%; background-color: var(--success-color); color: white; text-align: center; padding: 14px 0; border-radius: 8px; font-weight: bold; text-decoration: none; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 1.2rem; cursor: pointer; border: none; }
         .tel-119-btn { background-color: var(--danger-color); }
 
@@ -62,6 +60,7 @@
 </head>
 <body>
 
+    <!-- 🏗️ タイトルエリア -->
     <div class="header-container">
         <img src="logo.png" class="logo-img" alt="松建ロゴ">
         <h1>松建ルーキーズ・サポート</h1>
@@ -82,6 +81,7 @@
     <button class="btn btn-sos" onclick="triggerSOS()">🚨 緊急 SOS ボタン</button>
 
 
+    <!-- 🚨 1. 緊急ナビゲーション画面 -->
     <div id="sosScreen" class="overlay-screen">
         <div class="screen-header bg-danger">🚨 緊急事態ナビゲーション</div>
         
@@ -107,7 +107,6 @@
                 <div class="step-title" id="title119">【選択肢 B】緊急を要するため119番通報</div>
                 <div>即座に119番し、以下の現場情報をそのまま読み上げてください：
                     <div class="highlight-box">「松本建設の現場です。<br>現場名：<span id="sosSiteName">未設定</span><br>住所：<span id="sosSiteAddr">未設定</span><br>で負傷者が発生しました。至急救急車をお願いします！」</div>
-                    
                     <button class="call-btn tel-119-btn" onclick="safeCall119()">🚨 119番へ今すぐ発信</button>
                 </div>
             </div>
@@ -117,6 +116,7 @@
     </div>
 
 
+    <!-- ⚙️ 2. 現場情報設定画面 -->
     <div id="settingScreen" class="overlay-screen">
         <div class="screen-header bg-setting">⚙️ 現場情報・API設定</div>
         <div class="form-group"><label>現場名</label><input type="text" id="inputSiteName" placeholder="例：〇〇ビル新築工事現場"></div>
@@ -125,18 +125,22 @@
         <div class="form-group"><label>現場代理人の電話番号（ハイフンなし）</label><input type="tel" id="inputBossPhone" placeholder="例 : 09012345678"></div>
         <div class="form-group"><label>指定救急病院の名称</label><input type="text" id="inputHospName" placeholder="例：〇〇総合病院"></div>
         <div class="form-group"><label>救急病院の電話番号（ハイフンなし）</label><input type="tel" id="inputHospPhone" placeholder="例：0312345678"></div>
-        <div class="form-group" style="margin-top:20px; border-top:1px solid #ccc; padding-top:15px;"><label style="color:var(--main-color)">🔑 Gemini API キー</label><input type="password" id="inputApiKey" placeholder="AIzaSy..."></div>
-        <button class="btn" style="background-color: var(--success-color); width:100%; max-width:none;" onclick="saveSetting()">保存する</button>
+        <div class="form-group" style="margin-top:20px; border-top:1px solid #ccc; padding-top:15px;">
+            <label style="color:var(--main-color)">🔑 Gemini API キー</label>
+            <input type="password" id="inputApiKey" placeholder="AIzaSy...">
+        </div>
+        <button class="btn" id="saveSettingBtn" style="background-color: var(--success-color); width:100%; max-width:none;" onclick="saveSetting()">保存する</button>
         <button class="close-btn" onclick="closeScreen('settingScreen')">戻る</button>
     </div>
 
 
+    <!-- 🔐 3. 初回起動時の社内認証＆APIキー登録画面 -->
     <div id="authScreen" class="overlay-screen" style="display:none;">
         <div class="screen-header bg-auth">🔒 社内認証・初期設定</div>
         <p style="font-size:0.9rem; font-weight:bold; padding:0 10px;">松建ルーキーズ・サポートを開始します。社内共通パスワードと、会社のGemini APIキーを入力してください。</p>
         <div class="form-group"><label>社内共通パスワード</label><input type="password" id="authPassword" placeholder="社内共通パスワードを入力"></div>
         <div class="form-group"><label>Gemini API キー</label><input type="password" id="authApiKey" placeholder="AIzaSy..."></div>
-        <button class="btn" style="background-color:var(--main-color); width:100%; max-width:none; margin-top:15px;" onclick="checkAuth()">認証してアプリを始める</button>
+        <button class="btn" id="authSubmitBtn" style="background-color:var(--main-color); width:100%; max-width:none; margin-top:15px;" onclick="checkAuth()">認証してアプリを始める</button>
     </div>
 
 
@@ -148,25 +152,77 @@
             else { loadSettings(); }
         };
 
-        function checkAuth() {
+        // 🔍 APIキーが有効かどうかGoogleサーバーに問い合わせる検証テスト関数
+        async function validateApiKey(key) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
+                });
+                return response.ok; // 200 OKならtrue（有効）、400や403ならfalse（無効）
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 初回認証処理（APIキーチェック付き）
+        async function checkAuth() {
             const pass = document.getElementById('authPassword').value;
             const key = document.getElementById('authApiKey').value.trim();
+            const btn = document.getElementById('authSubmitBtn');
+
             if (pass !== COMPANY_PASSWORD) { alert("パスワードが違います。"); return; }
             if (key === "") { alert("APIキーを入力してください。"); return; }
+
+            btn.innerText = "🔄 APIキーを検証中...";
+            btn.disabled = true;
+
+            const isValid = await validateApiKey(key);
+            btn.disabled = false;
+            btn.innerText = "認証してアプリを始める";
+
+            if (!isValid) {
+                alert("⚠️ APIキーが無効です。\n「。」などの誤字がないか確認し、正しいキーを貼り付けてください。");
+                return;
+            }
+
             localStorage.setItem('gemini_api_key', key);
+            alert("APIキーの認証に成功しました！");
             document.getElementById('authScreen').style.display = 'none';
             loadSettings();
         }
 
-        function saveSetting() {
+        // 設定保存処理（APIキーチェック付き）
+        async function saveSetting() {
+            const btn = document.getElementById('saveSettingBtn');
+            const newKey = document.getElementById('inputApiKey').value.trim();
+
+            if (newKey !== "") {
+                btn.innerText = "🔄 APIキーを検証中...";
+                btn.disabled = true;
+
+                const isValid = await validateApiKey(newKey);
+                btn.disabled = false;
+                btn.innerText = "保存する";
+
+                if (!isValid) {
+                    alert("⚠️ 入力されたAPIキーが無効です。\nキーを確認して正しく入力し直してください。");
+                    return;
+                }
+                localStorage.setItem('gemini_api_key', newKey);
+            }
+
             localStorage.setItem('siteName', document.getElementById('inputSiteName').value);
             localStorage.setItem('siteAddr', document.getElementById('inputSiteAddr').value);
             localStorage.setItem('bossName', document.getElementById('inputBossName').value);
             localStorage.setItem('bossPhone', document.getElementById('inputBossPhone').value);
             localStorage.setItem('hospName', document.getElementById('inputHospName').value);
             localStorage.setItem('hospPhone', document.getElementById('inputHospPhone').value);
-            if(document.getElementById('inputApiKey').value.trim() !== "") { localStorage.setItem('gemini_api_key', document.getElementById('inputApiKey').value.trim()); }
-            alert("現場情報を保存しました！"); closeScreen('settingScreen'); loadSettings();
+
+            alert("現場情報を保存しました！"); 
+            closeScreen('settingScreen'); 
+            loadSettings();
         }
 
         function loadSettings() {
@@ -214,14 +270,9 @@
             document.getElementById('sosScreen').style.display = 'block'; 
         }
 
-        // --- 🔒 119番誤発信防止のダブルチェック機能 ---
         function safeCall119() {
-            // iPhone画面上に「本当の緊急事態ですか？」という最終ポップアップを出す
             let confirmCall = confirm("⚠️【最終確認】本当に119番（救急・消防）に直接電話をかけますか？\n(テストの場合は『キャンセル』を押してください)");
-            if (confirmCall) {
-                // OKを押した場合のみ、実際の通報ダイアルへ接続
-                window.location.href = "tel:119";
-            }
+            if (confirmCall) { window.location.href = "tel:119"; }
         }
 
         function unlockNextSteps() { document.getElementById('nextActionsArea').style.display = 'block'; }
@@ -230,7 +281,7 @@
 
         // --- 音声認識とAI処理 ---
         function searchTextTerm() { const inputVal = document.getElementById('keywordInput').value.trim(); if (inputVal === "") { alert("言葉を入力してください。"); return; } askGemini(inputVal); }
-        const SpeechRecognition = window.SpeechRecognition || window.webkitRecognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition; let isRecording = false;
         if (SpeechRecognition) {
             recognition = new SpeechRecognition(); recognition.lang = 'ja-JP'; recognition.interimResults = false;
@@ -254,7 +305,7 @@
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
                 const data = await response.json(); const aiResponse = data.candidates[0].content.parts[0].text;
                 display.innerHTML = `<strong>🔍 「${keyword}」の解説:</strong><br>${aiResponse.replace(/\n/g, '<br>')}`; document.getElementById('keywordInput').value = "";
-            } catch (error) { display.innerText = "AIからの返答の取得に失敗しました。"; }
+            } catch (error) { display.innerText = "AIからの返答の取得に失敗しました。キーが正しいか確認してください。"; }
         }
     </script>
 </body>
