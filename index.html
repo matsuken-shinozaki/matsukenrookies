@@ -280,7 +280,7 @@
             const prompt = `あなたは松本建設(株)のベテラン現場監督です。新入社員の現場監督見習いから「${keyword}」という言葉について質問されました。1.漢字・正式名称、2.意味、3.新人の注意点を3〜4行の短い箇条書きで分かりやすく教えてください。`;
 
             // Googleの最も互換性の高いエンドポイントを使用
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentApiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
 
             try {
                 const response = await fetch(apiUrl, { 
