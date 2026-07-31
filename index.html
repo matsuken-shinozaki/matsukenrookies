@@ -166,12 +166,10 @@
         let unlockedData = {}; // 暗号解除されたデータ保持用
 
         window.onload = function() {
-            // 暗号化データの存在チェック
-            if (localStorage.getItem('matsuken_encrypted_data')) {
+            if (localStorage.getItem('matsuken_encrypted_data') && localStorage.getItem('matsuken_credential_id')) {
                 document.getElementById('authScreen').style.display = 'block';
                 document.getElementById('touchIdArea').style.display = 'block';
                 document.getElementById('initialSetupArea').style.display = 'none';
-                // 自動的に指紋認証を呼び出す
                 loginWithTouchID();
             } else {
                 document.getElementById('authScreen').style.display = 'block';
@@ -185,20 +183,55 @@
             return rawKey.replace(/[\s\r\n\t]/g, "").trim();
         }
 
-        // --- 🔐 WebAuthn (Touch ID) 認証・暗号化ロジック ---
-        async function authenticateTouchID() {
+        // --- 🔐 WebAuthn (Touch ID) 処理の修正コード ---
+
+        // 1. 初回登録時（パスキーの新規作成）
+        async function createTouchIDCredential() {
             if (!window.PublicKeyCredential) {
-                alert("この端末はTouch ID / 生体認証に対応していません。");
-                return false;
+                alert("この端末・ブラウザはTouch ID / パスキーに対応していません。");
+                return null;
             }
             try {
-                // 生体認証のチャレンジ呼び出し
                 const publicKey = {
                     challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
-                    timeout: 60000,
-                    userVerification: "required"
+                    rp: { name: "松建ルーキーズ・サポート" },
+                    user: {
+                        id: new Uint8Array([1, 2, 3, 4]),
+                        name: "matsuken_user",
+                        displayName: "松建ユーザー"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform", // iPhone本体のTouch IDを指定
+                        userVerification: "required"
+                    },
+                    timeout: 60000
                 };
-                // 生体認証ダイアログの起動
+                const credential = await navigator.credentials.create({ publicKey });
+                return credential;
+            } catch (err) {
+                console.error(err);
+                return null;
+            }
+        }
+
+        // 2. 2回目以降ログイン時（既存パスキーでの認証）
+        async function authenticateTouchID() {
+            try {
+                const credIdBase64 = localStorage.getItem('matsuken_credential_id');
+                if (!credIdBase64) return false;
+
+                const credId = Uint8Array.from(atob(credIdBase64), c => c.charCodeAt(0));
+
+                const publicKey = {
+                    challenge: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]),
+                    allowCredentials: [{
+                        id: credId,
+                        type: 'public-key'
+                    }],
+                    userVerification: "required",
+                    timeout: 60000
+                };
                 const credential = await navigator.credentials.get({ publicKey });
                 return !!credential;
             } catch (err) {
@@ -207,7 +240,7 @@
             }
         }
 
-        // 簡易暗号化関数（実用的な文字コード難読＋AES互換処理）
+        // 暗号化・解凍関数
         function encryptText(text, salt) {
             return btoa(encodeURIComponent(text).split('').map((c, i) => 
                 String.fromCharCode(c.charCodeAt(0) ^ salt.charCodeAt(i % salt.length))
@@ -232,14 +265,19 @@
             if (pass !== COMPANY_PASSWORD) { alert("パスワードが違います。"); return; }
             if (key === "") { alert("APIキーを入力してください。"); return; }
 
-            // 生体認証の確認
-            const authSuccess = await authenticateTouchID();
-            if (!authSuccess) {
-                alert("Touch ID 認証に失敗しました。もう一度お試しください。");
+            // 💡 1. パスキーの新規作成（Touch IDダイアログ起動）
+            const cred = await createTouchIDCredential();
+            if (!cred) {
+                alert("Touch ID の登録に失敗またはキャンセルされました。");
                 return;
             }
 
-            // 認証成功後、データを暗号化して保存
+            // Credential IDを保存（次回以降の認証用）
+            const rawId = new Uint8Array(cred.rawId);
+            const credIdBase64 = btoa(String.fromCharCode(...rawId));
+            localStorage.setItem('matsuken_credential_id', credIdBase64);
+
+            // 💡 2. 認証成功後、データを暗号化して保存
             const dataToSave = { apiKey: key, siteName: '', siteAddr: '', bossName: '', bossPhone: '', hospName: '', hospPhone: '' };
             const encryptedStr = encryptText(JSON.stringify(dataToSave), COMPANY_PASSWORD);
             
@@ -283,7 +321,6 @@
             unlockedData.hospName = document.getElementById('inputHospName').value;
             unlockedData.hospPhone = document.getElementById('inputHospPhone').value;
 
-            // 暗号化してLocalStorageに保存
             const encryptedStr = encryptText(JSON.stringify(unlockedData), COMPANY_PASSWORD);
             localStorage.setItem('matsuken_encrypted_data', encryptedStr);
 
@@ -364,7 +401,6 @@
             } else { recognition.stop(); }
         }
 
-        // 💡 最新モデル（gemini-3.6-flash）による検索処理
         async function askGemini(keyword) {
             const display = document.getElementById('resultDisplay'); 
             let currentApiKey = cleanKey(unlockedData.apiKey);
@@ -378,7 +414,6 @@
             
             const prompt = `あなたは松本建設(株)のベテラン現場監督です。新入社員の現場監督見習いから「${keyword}」という言葉について質問されました。1.漢字・正式名称、2.意味、3.新人の注意点を3〜4行の短い箇条書きで分かりやすく教えてください。`;
 
-            // 最新モデル gemini-3.6-flash を指定
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
 
             try {
